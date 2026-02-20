@@ -132,39 +132,33 @@ class HikVisionClient {
     async getEvents(startTime, endTime) {
         const path = '/ISAPI/AccessControl/AcsEvent?format=json';
 
-        // Formato para T8003: YYYY-MM-DDTHH:mm:ss (Sin la Z)
-        const start = (startTime || new Date(Date.now() - 24 * 60 * 60 * 1000)).toISOString().split('.')[0];
-        const end = (endTime || new Date()).toISOString().split('.')[0];
+        // Usamos el rango sugerido por el usuario para asegurar que traiga todo
+        const start = "2000-01-01T00:00:00-05:00";
+        const end = new Date().toISOString().split('.')[0] + "-05:00"; // "now" formateado
 
         const body = {
-            AcsEventSearchDescription: {
+            AcsEventCond: {
                 searchID: "1",
                 searchResultPosition: 0,
-                maxResults: 100,
-                major: 0,
+                maxResults: 100, // Subimos a 100 por si acaso
+                major: 5,
                 minor: 0,
                 startTime: start,
-                endTime: end,
-                timeReverse: false,
-                eventSource: [{ "searchEventSource": "acs" }]
+                endTime: end
             }
         };
 
-        console.log(`>>> BUSCANDO EVENTOS DESDE ${start} HASTA ${end}`);
+        console.log(`>>> BUSCANDO TODAS LAS HUELLAS (AcsEventCond)...`);
         const data = await this.request('POST', path, body);
 
-        if (data && data.AcsEventSearchResult && data.AcsEventSearchResult.InfoList) {
-            return data.AcsEventSearchResult.InfoList;
-        }
+        console.log('>>> RESPUESTA CRUDA DE EVENTOS:', JSON.stringify(data, null, 2));
 
-        if (data && data.InfoList) return data.InfoList;
+        // EXTRAER LISTA: El T8003 devuelve AcsEvent -> InfoList
+        const list = data?.AcsEvent?.InfoList ||
+            data?.AcsEventSearchResult?.InfoList ||
+            data?.InfoList || [];
 
-        if (data && data.statusCode && data.statusCode === 6) {
-            console.error('ERROR EN BÚSQUEDA DE EVENTOS: Faltan parámetros o formato incorrecto.');
-            console.error('Respuesta cruda:', JSON.stringify(data));
-        }
-
-        return [];
+        return list;
     }
 }
 

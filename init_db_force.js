@@ -1,27 +1,27 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const { pool } = require('./db');
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
-
-const initDb = async () => {
+const initSchema = async () => {
+  console.log('Iniciando limpieza y creación de tablas...');
   const client = await pool.connect();
   try {
+    // 1. Borrar tablas existentes para asegurar los nuevos campos
+    await client.query('DROP TABLE IF EXISTS attendance_logs CASCADE;');
+    await client.query('DROP TABLE IF EXISTS users CASCADE;');
+
+    // 2. Crear tabla de usuarios
     await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         user_id VARCHAR(50) PRIMARY KEY,
         documento VARCHAR(50),
         name VARCHAR(200),
         card_no VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
 
-      CREATE TABLE IF NOT EXISTS attendance_logs (
+    // 3. Crear tabla de marcaciones con la nueva estructura
+    await client.query(`
+      CREATE TABLE attendance_logs (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(50) REFERENCES users(user_id) ON DELETE CASCADE,
         user_name VARCHAR(200),
@@ -38,12 +38,14 @@ const initDb = async () => {
         UNIQUE(user_id, event_time, serial_no)
       );
     `);
-    console.log('Database initialized successfully');
+
+    console.log('✅ TABLAS CREADAS EXITOSAMENTE');
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error('❌ ERROR AL CREAR TABLAS:', err.message);
   } finally {
     client.release();
+    process.exit();
   }
 };
 
-module.exports = { pool, initDb };
+initSchema();

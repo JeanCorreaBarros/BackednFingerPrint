@@ -106,6 +106,29 @@ app.get('/api/attendance', async (req, res) => {
     }
 });
 
+// Resumen de asistencia por usuario (Conteo y Horarios)
+app.get('/api/attendance/summary', async (req, res) => {
+    const { pool } = require('./db');
+    try {
+        const query = `
+            SELECT 
+                u.user_id, 
+                u.name, 
+                COUNT(l.id) as total_marcaciones,
+                MIN(l.event_time) as primera_marcacion,
+                MAX(l.event_time) as ultima_marcacion
+            FROM users u
+            LEFT JOIN attendance_logs l ON u.user_id = l.user_id
+            GROUP BY u.user_id, u.name
+            ORDER BY total_marcaciones DESC
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- SEGURIDAD Y TAREAS ---
 
 // Programar tarea automática (cada 5 min)
