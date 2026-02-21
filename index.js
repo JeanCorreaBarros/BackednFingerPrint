@@ -1,7 +1,6 @@
 const express = require('express');
-const cron = require('node-cron');
 const { initDb } = require('./db');
-const { syncData } = require('./syncService');
+const { processPushData } = require('./syncService');
 require('dotenv').config();
 
 const app = express();
@@ -12,16 +11,26 @@ app.use(express.json());
 // Inicializar base de datos
 initDb();
 
+// --- SEGURIDAD ---
+const validateToken = (req, res, next) => {
+    const token = req.headers['x-sync-token'];
+    if (!token || token !== process.env.SYNC_TOKEN) {
+        return res.status(401).json({ error: 'No autorizado. Token inválido o ausente.' });
+    }
+    next();
+};
+
 // --- ENDPOINTS DE SINCRONIZACIÓN ---
 
-// Disparar sincronización manualmente (funciona con GET desde el navegador)
-app.get('/api/sync', async (req, res) => {
+/**
+ * Endpoint PUSH: Recibe la data del huellero vía POST.
+ * Requiere el token configurado en .env
+ */
+app.post('/api/sync/push', validateToken, async (req, res) => {
     try {
-        await syncData();
-        res.status(200).json({ message: 'Sync triggered successfully' });
+        const result = await processPushData(req.body);
+        res.status(200).json(result);
     } catch (error) {
-        const fs = require('fs');
-        fs.appendFileSync('error.log', `${new Date().toISOString()} - ${error.stack}\n`);
         res.status(500).json({ error: error.message });
     }
 });
@@ -39,15 +48,15 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// Actualizar nombre o tarjeta de un usuario
+// Actualizar nombre, tarjeta o documento de un usuario
 app.put('/api/users/:id', async (req, res) => {
     const { pool } = require('./db');
-    const { name, card_no } = req.body;
+    const { name, card_no, documento } = req.body;
     const { id } = req.params;
     try {
         const result = await pool.query(
-            'UPDATE users SET name = $1, card_no = $2 WHERE user_id = $3 RETURNING *',
-            [name, card_no, id]
+            'UPDATE users SET name = $1, card_no = $2, documento = $3 WHERE user_id = $4 RETURNING *',
+            [name, card_no, documento, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.json(result.rows[0]);
@@ -56,13 +65,13 @@ app.put('/api/users/:id', async (req, res) => {
     }
 });
 
-// Eliminar un usuario de la base de datosLocal
+// Eliminar un usuario de la base de datos
 app.delete('/api/users/:id', async (req, res) => {
     const { pool } = require('./db');
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM users WHERE user_id = $1', [id]);
-        res.json({ message: 'Usuario eliminado de la base de datos' });
+        res.json({ message: 'Usuario eliminado' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -76,7 +85,7 @@ app.get('/api/attendance', async (req, res) => {
     const { start, end, user_id } = req.query;
 
     let query = `
-        SELECT l.*, u.name 
+        SELECT l.*, u.documento 
         FROM attendance_logs l 
         LEFT JOIN users u ON l.user_id = u.user_id 
         WHERE 1=1
@@ -113,13 +122,14 @@ app.get('/api/attendance/summary', async (req, res) => {
         const query = `
             SELECT 
                 u.user_id, 
+                u.documento,
                 u.name, 
                 COUNT(l.id) as total_marcaciones,
                 MIN(l.event_time) as primera_marcacion,
                 MAX(l.event_time) as ultima_marcacion
             FROM users u
             LEFT JOIN attendance_logs l ON u.user_id = l.user_id
-            GROUP BY u.user_id, u.name
+            GROUP BY u.user_id, u.documento, u.name
             ORDER BY total_marcaciones DESC
         `;
         const result = await pool.query(query);
@@ -129,14 +139,9 @@ app.get('/api/attendance/summary', async (req, res) => {
     }
 });
 
-// --- SEGURIDAD Y TAREAS ---
-
-// Programar tarea automática (cada 5 min)
-cron.schedule(process.env.SYNC_INTERVAL || '*/5 * * * *', () => {
-    console.log('Ejecutando sincronización programada...');
-    syncData().catch(err => console.error('Error en cron sync:', err.message));
-});
-
 app.listen(PORT, () => {
-    console.log(`Servidor CRUD listo en puerto ${PORT}`);
+    console.log(`\n==================================================`);
+    console.log(`Backend Cloud listo en puerto ${PORT}`);
+    console.log(`Endpoint Push: http://localhost:${PORT}/api/sync/push`);
+    console.log(`==================================================\n`);
 });

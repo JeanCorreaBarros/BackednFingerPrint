@@ -1,16 +1,18 @@
 const { pool } = require('./db');
-const { getEvents, getUsers, checkConnection } = require('./hikvisionClient');
 
-const syncUsers = async () => {
-    console.log('Sincronizando la lista de usuarios desde el huellero...');
+/**
+ * Procesa la data recibida vía POST (Modelo PUSH)
+ * Realiza el guardado de usuarios (separando documento y nombre)
+ * y el guardado de marcaciones.
+ */
+const processPushData = async (data) => {
     try {
-        const users = await getUsers();
-        console.log(`Se encontraron ${users.length} usuarios.`);
+        const users = data.users || [];
+        const events = data.events || [];
 
-        if (users.length > 0) {
-            console.log('>>> DATA CRUDA DE USUARIOS RECIBIDA:', JSON.stringify(users, null, 2));
-        }
+        console.log(`\n>>> RECIBIENDO DATA PUSH: ${users.length} usuarios, ${events.length} eventos.`);
 
+        // 1. Procesar Usuarios (Sincronizar nombres y documentos)
         for (const user of users) {
             const userId = user.employeeNo || user.employeeNoString;
             let rawName = user.name || '';
@@ -26,58 +28,35 @@ const syncUsers = async () => {
 
             const cardNo = user.Valid?.cardNo || '';
 
-            const query = `
+            await pool.query(`
                 INSERT INTO users (user_id, documento, name, card_no)
                 VALUES ($1, $2, $3, $4)
                 ON CONFLICT (user_id) DO UPDATE SET 
                     documento = EXCLUDED.documento,
                     name = EXCLUDED.name, 
                     card_no = EXCLUDED.card_no
-            `;
-            await pool.query(query, [userId, documento, name, cardNo]);
-        }
-        return users;
-    } catch (error) {
-        console.error('Error al sincronizar usuarios:', error.message);
-        return [];
-    }
-};
-
-const syncData = async () => {
-    const isOk = await checkConnection();
-    if (!isOk) return;
-
-    console.log('Iniciando sincronización completa (Usuarios y Asistencia)...');
-    try {
-        // 1. Obtener Usuarios
-        const users = await syncUsers();
-
-        // 2. Obtener Eventos
-        const events = await getEvents();
-        console.log(`Se encontraron ${events.length} eventos en total.`);
-
-        if (events.length > 0) {
-            console.log('>>> DATA CRUDA DE EVENTOS RECIBIDA:', JSON.stringify(events, null, 2));
+            `, [userId, documento, name, cardNo]);
         }
 
-        // 3. Procesar y guardar eventos
-        // Crear un mapa de ID -> Nombre para guardar en los logs directamente
+        // 2. Procesar Eventos
         const nameMap = {};
-        users.forEach(u => {
-            nameMap[u.employeeNo || u.employeeNoString] = u.name;
-        });
+        for (const user of users) {
+            nameMap[user.employeeNo || user.employeeNoString] = user.name;
+        }
 
         let insertedCount = 0;
         for (const event of events) {
             const userId = event.employeeNoString || event.employeeNo;
             const eventTime = event.time;
             const serialNo = event.serialNo || 0;
-            const userName = nameMap[userId] || 'Usuario Desconocido';
+            const rawName = nameMap[userId] || 'Usuario Desconocido';
+
+            let userName = rawName;
+            if (rawName.includes(' - ')) {
+                userName = rawName.split(' - ').slice(1).join(' - ').trim();
+            }
 
             if (!userId || !eventTime) continue;
-
-            // Asegurar que el usuario exista
-            await pool.query('INSERT INTO users (user_id, name) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, userName]);
 
             const query = `
                 INSERT INTO attendance_logs (
@@ -108,26 +87,12 @@ const syncData = async () => {
             if (res.rowCount > 0) insertedCount++;
         }
 
-        // 4. Crear el JSON combinado que pidió el usuario para la consola
-        const combined = users.map(u => {
-            const uId = u.employeeNo || u.employeeNoString;
-            return {
-                ...u,
-                marcaciones: events.filter(e => (e.employeeNoString || e.employeeNo) === uId)
-            };
-        });
-
-        console.log('\n==================================================');
-        console.log('           RESUMEN COMBINADO (USUARIOS + HUELLAS)');
-        console.log('==================================================');
-        console.log(JSON.stringify(combined, null, 2));
-        console.log('==================================================\n');
-
-        console.log(`Sincronización finalizada. Se insertaron ${insertedCount} nuevos registros.`);
+        console.log(`Push procesado exitosamente. ${insertedCount} nuevas marcaciones.\n`);
+        return { success: true, inserted: insertedCount };
     } catch (error) {
-        console.error('Error durante la sincronización:', error.message);
+        console.error('Error procesando data push:', error.message);
         throw error;
     }
 };
 
-module.exports = { syncData };
+module.exports = { processPushData };
