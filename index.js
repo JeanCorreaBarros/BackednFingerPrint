@@ -3,6 +3,19 @@ const { initDb } = require('./db');
 const { processPushData } = require('./syncService');
 require('dotenv').config();
 
+// --- MANEJO DE ERRORES GLOBALES ---
+process.on('uncaughtException', (err) => {
+    console.error('❌ ERROR CRÍTICO (Uncaught):', err.message);
+    if (err.code === 'EADDRINUSE') {
+        console.error('⚠️ El puerto 3000 ya está en uso. Por favor cierra otros procesos de Node.');
+        process.exit(1);
+    }
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ PROMESA FALLIDA (Unhandled):', reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -139,9 +152,17 @@ app.get('/api/attendance/summary', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n==================================================`);
     console.log(`Backend Cloud listo en puerto ${PORT}`);
     console.log(`Endpoint Push: http://localhost:${PORT}/api/sync/push`);
     console.log(`==================================================\n`);
+});
+
+server.on('error', (err) => {
+    console.error('❌ ERROR EN EL SERVIDOR:', err);
+});
+
+server.on('close', () => {
+    console.log('⚠️ EL SERVIDOR SE HA CERRADO');
 });

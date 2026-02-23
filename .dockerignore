@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+error.log
+.env
+.git
+.gitignore
+*.md
+verify_push_data.js
+check_db_via_api.js
+test_push.js
+test_sync.js
+init_db_force.js
+crear_tablas.sql

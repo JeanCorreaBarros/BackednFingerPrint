@@ -7,10 +7,31 @@ const { pool } = require('./db');
  */
 const processPushData = async (data) => {
     try {
-        const users = data.users || [];
-        const events = data.events || [];
+        let users = [];
+        let events = [];
 
-        console.log(`\n>>> RECIBIENDO DATA PUSH: ${users.length} usuarios, ${events.length} eventos.`);
+        // Detectar si la data es un array directo de eventos o un objeto con keys
+        if (Array.isArray(data)) {
+            events = data;
+            // Si es un array de eventos, intentamos extraer la info de usuarios de los eventos mismos
+            // para asegurar que existan en la DB antes de insertar las marcaciones (FK constraint)
+            const uniqueUsers = {};
+            for (const event of events) {
+                const userId = event.employeeNoString || event.employeeNo;
+                if (userId && !uniqueUsers[userId]) {
+                    uniqueUsers[userId] = {
+                        employeeNo: userId,
+                        name: event.userName || ''
+                    };
+                }
+            }
+            users = Object.values(uniqueUsers);
+        } else {
+            users = data.users || [];
+            events = data.events || [];
+        }
+
+        console.log(`\n>>> RECIBIENDO DATA PUSH: ${users.length} usuarios (detectados), ${events.length} eventos.`);
 
         // 1. Procesar Usuarios (Sincronizar nombres y documentos)
         for (const user of users) {
@@ -39,17 +60,12 @@ const processPushData = async (data) => {
         }
 
         // 2. Procesar Eventos
-        const nameMap = {};
-        for (const user of users) {
-            nameMap[user.employeeNo || user.employeeNoString] = user.name;
-        }
-
         let insertedCount = 0;
         for (const event of events) {
             const userId = event.employeeNoString || event.employeeNo;
             const eventTime = event.time;
             const serialNo = event.serialNo || 0;
-            const rawName = nameMap[userId] || 'Usuario Desconocido';
+            const rawName = event.userName || 'Usuario Desconocido';
 
             let userName = rawName;
             if (rawName.includes(' - ')) {
