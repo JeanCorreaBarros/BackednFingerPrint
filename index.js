@@ -23,7 +23,10 @@ app.use(express.json());
 
 // Middleware para compatibilidad con prefijo /api (útil para despliegues como Easypanel)
 app.use((req, res, next) => {
-    if (req.url.startsWith('/api/')) {
+    // Manejar tanto "/api" como "/api/..."
+    if (req.url === '/api') {
+        req.url = '/';
+    } else if (req.url.startsWith('/api/')) {
         req.url = req.url.replace('/api/', '/');
     }
     next();
