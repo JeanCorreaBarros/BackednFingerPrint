@@ -32,6 +32,16 @@ app.use((req, res, next) => {
 // Inicializar base de datos
 initDb();
 
+// Endpoint raíz para verificar que la API está viva
+app.get('/', (req, res) => {
+    res.json({
+        status: 'online',
+        message: 'Backend FingerPrint API is running',
+        timestamp: new Date().toISOString(),
+        version: '1.2.0'
+    });
+});
+
 // --- SEGURIDAD ---
 const validateToken = (req, res, next) => {
     const token = req.headers['x-sync-token'];
