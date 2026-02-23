@@ -21,6 +21,14 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Middleware para compatibilidad con prefijo /api (útil para despliegues como Easypanel)
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+        req.url = req.url.replace('/api/', '/');
+    }
+    next();
+});
+
 // Inicializar base de datos
 initDb();
 
