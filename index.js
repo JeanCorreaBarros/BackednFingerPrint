@@ -39,7 +39,7 @@ const validateToken = (req, res, next) => {
  * Endpoint PUSH: Recibe la data del huellero vía POST.
  * Requiere el token configurado en .env
  */
-app.post('/api/sync/push', validateToken, async (req, res) => {
+app.post('/sync/push', validateToken, async (req, res) => {
     try {
         const result = await processPushData(req.body);
         res.status(200).json(result);
@@ -51,7 +51,7 @@ app.post('/api/sync/push', validateToken, async (req, res) => {
 // --- CRUD DE USUARIOS ---
 
 // Listar todos los usuarios
-app.get('/api/users', async (req, res) => {
+app.get('/users', async (req, res) => {
     const { pool } = require('./db');
     try {
         const result = await pool.query('SELECT * FROM users ORDER BY name ASC');
@@ -62,7 +62,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Actualizar nombre, tarjeta o documento de un usuario
-app.put('/api/users/:id', async (req, res) => {
+app.put('/users/:id', async (req, res) => {
     const { pool } = require('./db');
     const { name, card_no, documento } = req.body;
     const { id } = req.params;
@@ -79,7 +79,7 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // Eliminar un usuario de la base de datos
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/users/:id', async (req, res) => {
     const { pool } = require('./db');
     const { id } = req.params;
     try {
@@ -93,7 +93,7 @@ app.delete('/api/users/:id', async (req, res) => {
 // --- CONSULTA DE ASISTENCIA ---
 
 // Ver registros con filtros (fecha y usuario)
-app.get('/api/attendance', async (req, res) => {
+app.get('/attendance', async (req, res) => {
     const { pool } = require('./db');
     const { start, end, user_id } = req.query;
 
@@ -129,7 +129,7 @@ app.get('/api/attendance', async (req, res) => {
 });
 
 // Resumen de asistencia por usuario (Conteo y Horarios)
-app.get('/api/attendance/summary', async (req, res) => {
+app.get('/attendance/summary', async (req, res) => {
     const { pool } = require('./db');
     try {
         const query = `
@@ -155,7 +155,7 @@ app.get('/api/attendance/summary', async (req, res) => {
 const server = app.listen(PORT, () => {
     console.log(`\n==================================================`);
     console.log(`Backend Cloud listo en puerto ${PORT}`);
-    console.log(`Endpoint Push: http://localhost:${PORT}/api/sync/push`);
+    console.log(`Endpoint Push: http://localhost:${PORT}/sync/push`);
     console.log(`==================================================\n`);
 });
 

@@ -2,7 +2,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const testPush = async () => {
-    const url = `http://localhost:${process.env.PORT || 3000}/api/sync/push`;
+    const url = `http://localhost:${process.env.PORT || 3000}/sync/push`;
     const token = process.env.SYNC_TOKEN;
 
     const data = {

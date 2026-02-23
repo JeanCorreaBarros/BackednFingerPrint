@@ -344,7 +344,7 @@ const data = [
 ];
 
 const SYNC_TOKEN = 'HikvisionSecretToken2026';
-const URL = 'http://localhost:3000/api/sync/push';
+const URL = 'http://localhost:3000/sync/push';
 
 async function test() {
     try {

@@ -10,7 +10,7 @@ Esta API permite gestionar los usuarios y ver las marcaciones de asistencia sinc
 ## 1. Usuarios
 
 ### Obtener todos los usuarios
-**Endpoint:** `GET /api/users`  
+**Endpoint:** `GET /users`  
 **Respuesta (200 OK):**
 ```json
 [
@@ -24,7 +24,7 @@ Esta API permite gestionar los usuarios y ver las marcaciones de asistencia sinc
 ```
 
 ### Actualizar un usuario
-**Endpoint:** `PUT /api/users/:id`  
+**Endpoint:** `PUT /users/:id`  
 **Body (JSON):**
 ```json
 {
@@ -34,14 +34,14 @@ Esta API permite gestionar los usuarios y ver las marcaciones de asistencia sinc
 ```
 
 ### Eliminar un usuario
-**Endpoint:** `DELETE /api/users/:id`  
+**Endpoint:** `DELETE /users/:id`  
 
 ---
 
 ## 2. Asistencia
 
 ### Consultar marcaciones (con filtros)
-**Endpoint:** `GET /api/attendance`  
+**Endpoint:** `GET /attendance`  
 **Query Parameters (Opcionales):**
 - `start`: Fecha inicio (ISO 8601, ej: `2024-02-01`)
 - `end`: Fecha fin (ej: `2024-02-28`)
@@ -66,5 +66,5 @@ Esta API permite gestionar los usuarios y ver las marcaciones de asistencia sinc
 ## 3. Sincronización Manual
 
 ### Disparar sincronización
-**Endpoint:** `POST /api/sync`  
+**Endpoint:** `POST /sync`  
 **Descripción:** Fuerza al servidor a conectarse al huellero y traer nuevos datos de inmediato.

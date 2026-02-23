@@ -11,7 +11,7 @@ Para que el servidor acepte los datos, cada petición debe incluir un token de s
 
 ## 2. Endpoint
 
-- **URL:** `http://TU_IP_O_DOMINIO:3000/api/sync/push`
+- **URL:** `http://TU_IP_O_DOMINIO:3000/sync/push`
 - **Método:** `POST`
 - **Content-Type:** `application/json`
 
@@ -53,7 +53,7 @@ El servidor espera un objeto con las listas de `users` y `events`.
 Puedes probar el envío desde una terminal con este comando:
 
 ```bash
-curl -X POST http://localhost:3000/api/sync/push \
+curl -X POST http://localhost:3000/sync/push \
      -H "Content-Type: application/json" \
      -H "x-sync-token: HikvisionSecretToken2026" \
      -d '{
