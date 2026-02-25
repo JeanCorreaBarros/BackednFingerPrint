@@ -79,9 +79,10 @@ const processPushData = async (data) => {
                     user_id, user_name, event_time, event_type, 
                     major_type, minor_type, card_no, 
                     serial_no, user_type, attendance_status, 
+                    device_id, device_name, sede_id,
                     raw_data
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 ON CONFLICT (user_id, event_time, serial_no) DO NOTHING
             `;
 
@@ -96,6 +97,9 @@ const processPushData = async (data) => {
                 serialNo,
                 event.userType || 'normal',
                 event.attendanceStatus || 'undefined',
+                event.deviceId || null,
+                event.deviceName || null,
+                event.sedeId || null,
                 JSON.stringify(event)
             ];
 

@@ -65,6 +65,33 @@ Ve a la pestaña **"Environment"** de tu aplicación y agrega las siguientes var
 
 ---
 
+## Cómo Actualizar tu Proyecto Existente
+
+Si ya tienes el proyecto corriendo y quieres subir cambios nuevos (como los nuevos campos de la base de datos):
+
+### 1. Actualizar el Código (Backend)
+1.  **Sube tus cambios a Git**: Asegúrate de haber hecho `git push` de tu código local al repositorio conectado.
+2.  **Entra a Easypanel**: Ve a tu proyecto y selecciona el servicio de la App (ej. `fingerprint-api`).
+3.  **Desplegar**: Haz clic en el botón **"Deploy"**. Easypanel descargará la última versión de tu código y reconstruirá el contenedor automáticamente.
+
+### 2. Actualizar la Base de Datos (Si ya existe)
+Si tu base de datos ya tiene datos y solo quieres agregar las nuevas columnas (`device_id`, `device_name`, `sede_id`), sigue estos pasos:
+
+1.  En Easypanel, ve al servicio de tu base de datos (ej. `fingerprint-db`).
+2.  Busca la pestaña **"Console"** o **"Terminal"**.
+3.  Copia y pega el siguiente comando SQL para agregar las columnas faltantes:
+    ```sql
+    ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS device_id INTEGER;
+    ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS device_name VARCHAR(200);
+    ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS sede_id VARCHAR(50);
+    ```
+4.  **Verificación**: Puedes verificar que las columnas se agregaron ejecutando:
+    ```sql
+    SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'attendance_logs';
+    ```
+
+---
+
 ## Solución de Problemas Comunes
 
 -   **Error de Conexión a DB**: Verifica que el `DB_HOST` coincida exactamente con el nombre del servicio de base de datos en Easypanel.

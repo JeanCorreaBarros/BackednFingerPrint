@@ -42,11 +42,27 @@ El servidor espera un objeto con las listas de `users` y `events`.
       "major": 5,
       "minor": 38,
       "serialNo": 316,
-      "attendanceStatus": "undefined"
+      "attendanceStatus": "check-in",
+      "deviceId": 2,
+      "deviceName": "HUELLERO_SECUNDARIO",
+      "sedeId": "3"
     }
   ]
 }
 ```
+
+### Campos del Evento
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| employeeNoString | String | ID del empleado (obligatorio) |
+| time | ISO8601 | Fecha y hora del evento |
+| userName | String | Nombre completo del usuario |
+| major | Number | Tipo de evento principal |
+| minor | Number | Tipo de evento secundario |
+| deviceId | Number | ID del dispositivo que originó el evento |
+| deviceName | String | Nombre del dispositivo |
+| sedeId | String | ID de la sede vinculada al dispositivo |
 
 ## 4. Ejemplo de Consumo (cURL)
 
@@ -58,7 +74,7 @@ curl -X POST http://localhost:3000/sync/push \
      -H "x-sync-token: HikvisionSecretToken2026" \
      -d '{
            "users": [{"employeeNo": "1", "name": "12345 - Test User"}],
-           "events": [{"employeeNoString": "1", "time": "2026-02-20T18:00:00Z", "major": 5, "minor": 38, "serialNo": 999}]
+           "events": [{"employeeNoString": "1", "time": "2026-02-20T18:00:00Z", "major": 5, "minor": 38, "serialNo": 999, "attendanceStatus": "check-in", "deviceId": 1, "deviceName": "HUELLERO_PRINCIPAL", "sedeId": "1"}]
          }'
 ```
 

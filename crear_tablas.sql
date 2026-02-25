@@ -26,6 +26,9 @@ CREATE TABLE attendance_logs (
     user_type VARCHAR(100),
     attendance_status VARCHAR(100),
     raw_data JSONB,
+    device_id INTEGER,
+    device_name VARCHAR(200),
+    sede_id VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, event_time, serial_no)
 );
